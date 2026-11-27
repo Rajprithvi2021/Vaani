@@ -1,0 +1,38 @@
+name: vaani
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: vaani
+      POSTGRES_PASSWORD: vaani
+      POSTGRES_DB: vaani
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaani -d vaani"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Optional: run the whole app in Docker with `docker compose --profile app up --build`.
+  app:
+    profiles: ["app"]
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://vaani:vaani@db:5432/vaani
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

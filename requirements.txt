@@ -1,0 +1,20 @@
+# Web + realtime
+fastapi>=0.165
+uvicorn[standard]>=0.54
+pydantic-settings>=2.16
+
+# Database (PostgreSQL)
+sqlalchemy>=2.1
+psycopg[binary]>=3.3
+
+# Speech-to-text
+google-genai>=3.6        # Gemini Live API (default engine)
+faster-whisper>=1.2      # self-hosted open-source engine (STT_PROVIDER=whisper)
+numpy>=2.0
+
+# Text-to-speech (open source)
+piper-tts>=1.8
+
+# Tests
+pytest>=9.0
+httpx>=0.28
