@@ -40,7 +40,7 @@ Requirements: Python 3.12, Docker (for PostgreSQL), and a Gemini API key (free: 
 docker compose up -d db                      # PostgreSQL 17 on localhost:5432 (user/pass/db: vaani)
 python -m venv .venv
 .venv\Scripts\activate                       # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt          # app + self-hosted models + tests (cloud-only: requirements.txt)
 copy .env.example .env                       # macOS/Linux: cp .env.example .env  → then set GEMINI_API_KEY
 python scripts/download_models.py            # Piper voices for text-to-speech (~120 MB)
 uvicorn app.main:app --port 8000
@@ -68,6 +68,29 @@ more Hindi spelling mistakes.
 ```powershell
 docker compose --profile app up --build      # app on http://localhost:8000, reads .env
 ```
+
+## Deploy for free (Render + Neon)
+
+The app runs on a **Render** free web service, which provides HTTPS and WebSockets (browsers only allow the
+microphone on HTTPS). The data lives in a **Neon** free PostgreSQL database, which does not expire, unlike Render's
+free database. Neither needs a credit card.
+
+1. **Database (Neon):** create a project at https://console.neon.tech (Postgres 17, AWS **Singapore**). Click
+   **Connect** with *Connection pooling* on and copy the connection string (`postgresql://…?sslmode=require`).
+   Tables are created automatically on first start.
+2. **App (Render):** on https://dashboard.render.com choose **New → Blueprint**, connect this GitHub repo, and
+   Render reads [`render.yaml`](render.yaml). When asked, paste:
+   - `DATABASE_URL`: the Neon connection string (the `postgresql://` prefix is accepted as is);
+   - `GEMINI_API_KEY`: a free key from https://aistudio.google.com/apikey.
+3. Open `https://vaani-xxxx.onrender.com` once the deploy is live. `/api/health` should report `gemini` and `configured: true`.
+
+Notes on the free tier:
+- The cloud image is built from the slim `requirements.txt` (Gemini Live only). The free instance has 512 MB of RAM,
+  which is too little for faster-whisper or the Piper voices. Read-aloud falls back to the browser's own voices,
+  and Chrome and Edge include Hindi voices.
+- Free services sleep after about 15 minutes idle, and the first request then takes 30–60 s to wake the app. Open
+  the link a minute before a demo.
+- Every push to `main` redeploys automatically.
 
 ### Demo without a microphone
 
@@ -119,11 +142,12 @@ server → {"type":"saved","transcription":{...}}     or {"type":"empty"} / {"ty
 pytest
 ```
 
-The 33 tests run offline on in-memory SQLite and cover:
+The tests run offline on in-memory SQLite and cover:
 - the CRUD API, search with escaped wildcards, filters, paging, validation and stats;
 - the WebSocket protocol with a scripted engine: streaming, default titles, silence, abrupt disconnect, engine failure;
 - the Gemini Live session against a fake Live connection: streaming, `go_away` reconnect with no audio lost, keeping a trailing interim, connection errors, and config;
-- language tagging, plus Piper output for mixed-language text (a valid WAV).
+- language tagging, plus Piper output for mixed-language text (a valid WAV);
+- database URL handling for Neon and Render connection strings.
 
 ## Project layout
 

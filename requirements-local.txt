@@ -1,0 +1,5 @@
+# Everything in requirements.txt plus the self-hosted open-source models.
+-r requirements.txt
+
+faster-whisper>=1.2      # speech-to-text on your own machine (STT_PROVIDER=whisper)
+piper-tts>=1.8           # text-to-speech (Hindi + English voices)

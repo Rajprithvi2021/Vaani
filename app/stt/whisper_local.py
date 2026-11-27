@@ -33,7 +33,11 @@ def load_model(name: str, device: str, compute_type: str):
     key = (name, device, compute_type)
     with _model_lock:
         if key not in _models:
-            from faster_whisper import WhisperModel  # heavy import, only when this engine is used
+            try:
+                from faster_whisper import WhisperModel  # heavy import, only when this engine is used
+            except ImportError:
+                raise RuntimeError("faster-whisper is not installed (pip install -r requirements-local.txt), "
+                                   "or set STT_PROVIDER=gemini") from None
 
             log.info("Loading faster-whisper model %s (%s/%s)", name, device, compute_type)
             _models[key] = WhisperModel(name, device=device, compute_type=compute_type)

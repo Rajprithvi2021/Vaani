@@ -18,9 +18,13 @@ services:
       retries: 20
 
   # Optional: run the whole app in Docker with `docker compose --profile app up --build`.
+  # Includes the self-hosted models; download them first with scripts/download_models.py.
   app:
     profiles: ["app"]
-    build: .
+    build:
+      context: .
+      args:
+        REQUIREMENTS: requirements-local.txt
     env_file:
       - path: .env
         required: false

@@ -17,7 +17,11 @@ def make_engine(url: str) -> Engine:
     if url.startswith("sqlite"):
         # Used by the test-suite: one shared in-memory database across threads.
         return create_engine(url, connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    return create_engine(url, pool_pre_ping=True)
+    # pool_pre_ping + pool_recycle: serverless Postgres (Neon) suspends idle computes and drops
+    # connections. prepare_threshold=None: no server-side prepared statements, which keeps
+    # transaction-mode poolers (PgBouncer, Neon's "-pooler" host) happy.
+    return create_engine(url, pool_pre_ping=True, pool_recycle=300, pool_size=5, max_overflow=5,
+                         connect_args={"prepare_threshold": None})
 
 
 engine: Engine = make_engine(get_settings().database_url)

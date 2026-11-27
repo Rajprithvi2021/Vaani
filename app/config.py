@@ -3,9 +3,23 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
+
+
+def normalize_database_url(url: str) -> str:
+    """Accept the URLs hosting providers hand out and point SQLAlchemy at the psycopg 3 driver.
+
+    Neon gives `postgresql://...?sslmode=require`, Render/Heroku give `postgres://...`;
+    SQLAlchemy would pick the (uninstalled) psycopg2 driver for both.
+    """
+    url = url.strip()
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
 
 
 class Settings(BaseSettings):
@@ -13,6 +27,11 @@ class Settings(BaseSettings):
 
     # --- Database -----------------------------------------------------------------------------
     database_url: str = "postgresql+psycopg://vaani:vaani@localhost:5432/vaani"
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_database_url(cls, value: str) -> str:
+        return normalize_database_url(value)
 
     # --- Speech-to-text -----------------------------------------------------------------------
     # "gemini"  -> Gemini Live API (cloud, real-time streaming, free tier)
